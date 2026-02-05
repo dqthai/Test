@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Be My Valentine?</title>
+  <style>
+    :root{
+      --bg:#fff6f8;
+      --accent:#d6336c;
+      --accent-2:#ff7aa2;
+      --muted:#6b6b6b;
+    }
+    html,body{height:100%;margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    body{
+      display:grid;
+      place-items:center;
+      background: radial-gradient(circle at 10% 10%, #fff0f2 0%, var(--bg) 35%);
+      color:var(--muted);
+    }
+
+    .card{
+      text-align:center;
+      padding:36px 40px;
+      border-radius:16px;
+      box-shadow: 0 8px 30px rgba(214,51,108,0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,250,252,0.9));
+      min-width:320px;
+      max-width:520px;
+    }
+
+    h1{
+      margin:0 0 22px 0;
+      font-size:28px;
+      color:#3d2430;
+      letter-spacing:0.2px;
+    }
+
+    .buttons{
+      display:flex;
+      justify-content:center;
+      gap:18px;
+      margin-top:8px;
+      position:relative;
+      height:64px; /* reserve space for moving button */
+    }
+
+    button{
+      padding:12px 20px;
+      border-radius:10px;
+      border:0;
+      font-weight:600;
+      font-size:16px;
+      cursor:pointer;
+      user-select:none;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    button:active{ transform: translateY(2px) scale(0.995); }
+
+    #yesBtn{
+      background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 100%);
+      color:white;
+    }
+
+    #noBtn{
+      background: white;
+      color:var(--accent);
+      border:2px solid rgba(214,51,108,0.12);
+      position: fixed; /* we will position no button absolutely on the viewport */
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      transition: transform 220ms cubic-bezier(.2,.9,.3,1), left 220ms ease, top 220ms ease;
+      z-index: 999;
+      min-width:120px;
+    }
+
+    /* small touch & visual polish */
+    .hint{font-size:13px; color:#8b6b75; margin-top:12px;}
+    .heart {
+      display:inline-block;
+      margin-left:8px;
+      transform:translateY(0);
+      transition: transform 250ms ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <h1>Would you be my valentine? <span class="heart" aria-hidden>💖</span></h1>
+
+    <div class="buttons" aria-hidden>
+      <button id="yesBtn" type="button">Yes</button>
+      <!-- noBtn starts centered just below the text; JS will reposition it as needed -->
+      <button id="noBtn" type="button" aria-label="No">No</button>
+    </div>
+
+    <div class="hint">Click Yes to accept — No will run away if you try to catch it 😉</div>
+  </div>
+
+  <script>
+    (function() {
+      const yesBtn = document.getElementById('yesBtn');
+      const noBtn = document.getElementById('noBtn');
+      const card = document.getElementById('card');
+
+      // place the "No" button initially under the buttons container, centered horizontally
+      function placeNoInitial() {
+        const rect = card.getBoundingClientRect();
+        const startX = window.innerWidth/2;
+        const startY = rect.top + rect.height/2 + 36;
+        setBtnPosition(startX, startY);
+      }
+
+      // set button position (left/top are viewport coordinates)
+      function setBtnPosition(x, y){
+        // clamp so the button stays fully in viewport
+        const bw = noBtn.offsetWidth, bh = noBtn.offsetHeight;
+        const padding = 12;
+        const minX = padding;
+        const minY = padding;
+        const maxX = window.innerWidth - bw - padding;
+        const maxY = window.innerHeight - bh - padding;
+        const clampedX = Math.min(maxX, Math.max(minX, x - bw/2));
+        const clampedY = Math.min(maxY, Math.max(minY, y - bh/2));
+        noBtn.style.left = clampedX + 'px';
+        noBtn.style.top = clampedY + 'px';
+      }
+
+      // move the button randomly but try to keep it away from (mx,my)
+      function moveNoAwayFrom(mx, my) {
+        const attempts = 18;
+        const minDist = 200; // desirable minimum distance from mouse
+        const bw = noBtn.offsetWidth, bh = noBtn.offsetHeight;
+        for (let i = 0; i < attempts; i++) {
+          const x = Math.random() * window.innerWidth;
+          const y = Math.random() * window.innerHeight;
+          const centerX = x;
+          const centerY = y;
+          const d = Math.hypot(centerX - mx, centerY - my);
+          if (d > minDist) {
+            setBtnPosition(centerX, centerY);
+            return;
+          }
+        }
+        // fallback: push it directly opposite from the mouse
+        const oppositeX = window.innerWidth - mx;
+        const oppositeY = window.innerHeight - my;
+        setBtnPosition(oppositeX, oppositeY);
+      }
+
+      // if mouse gets within threshold of the button center, move it
+      function onMouseMove(e) {
+        const rect = noBtn.getBoundingClientRect();
+        const bx = rect.left + rect.width/2;
+        const by = rect.top + rect.height/2;
+        const dx = e.clientX - bx;
+        const dy = e.clientY - by;
+        const dist = Math.hypot(dx, dy);
+        const threshold = 140; // px
+        if (dist < threshold) {
+          moveNoAwayFrom(e.clientX, e.clientY);
+        }
+      }
+
+      // touch support: move when trying to touch the button
+      function onTouchMove(e){
+        if (!e.touches || e.touches.length === 0) return;
+        const t = e.touches[0];
+        onMouseMove({clientX: t.clientX, clientY: t.clientY});
+      }
+
+      // allow clicking the no button if user is fast enough or after many attempts: tiny easter egg
+      noBtn.addEventListener('click', () => {
+        noBtn.disabled = true;
+        noBtn.innerText = "Fine... 😢";
+        noBtn.style.transform = "scale(0.97)";
+        setTimeout(() => {
+          noBtn.style.transform = "";
+          noBtn.disabled = false;
+        }, 700);
+      });
+
+      yesBtn.addEventListener('click', () => {
+        yesBtn.disabled = true;
+        yesBtn.innerText = "Yay! ❤️";
+        // animate the heart in the heading
+        const heart = document.querySelector('.heart');
+        heart.style.transform = 'translateY(-6px) scale(1.2)';
+        setTimeout(() => heart.style.transform = '', 900);
+      });
+
+      // Make the No button cheeky if user hovers directly on it (older browsers)
+      noBtn.addEventListener('mouseenter', (e) => {
+        moveNoAwayFrom(e.clientX, e.clientY);
+      });
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('touchmove', onTouchMove, {passive:true});
+      window.addEventListener('resize', placeNoInitial);
+
+      // initial placement after layout
+      window.addEventListener('load', () => {
+        // a small delay ensures proper sizing
+        setTimeout(placeNoInitial, 40);
+      });
+
+      // keyboard accessibility: let user focus and arrow-key move the No button if needed
+      noBtn.addEventListener('keydown', (e) => {
+        const step = 40;
+        const rect = noBtn.getBoundingClientRect();
+        if (e.key === 'ArrowLeft') setBtnPosition(rect.left - step, rect.top);
+        if (e.key === 'ArrowRight') setBtnPosition(rect.left + step, rect.top);
+        if (e.key === 'ArrowUp') setBtnPosition(rect.left, rect.top - step);
+        if (e.key === 'ArrowDown') setBtnPosition(rect.left, rect.top + step);
+      });
+
+    })();
+  </script>
+</body>
+</html>
