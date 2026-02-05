@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Be My Valentine?</title>
 
   <style>
@@ -24,6 +24,11 @@
       place-items:center;
       background: radial-gradient(circle at 10% 10%, #fff0f2 0%, var(--bg) 35%);
       color:var(--muted);
+      padding:
+        env(safe-area-inset-top)
+        env(safe-area-inset-right)
+        env(safe-area-inset-bottom)
+        env(safe-area-inset-left);
     }
 
     .card{
@@ -58,11 +63,7 @@
       cursor:pointer;
       user-select:none;
       box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-      transition: transform 180ms ease;
-    }
-
-    button:active{
-      transform: translateY(2px) scale(0.995);
+      transition: transform 160ms ease;
     }
 
     #yesBtn{
@@ -103,7 +104,7 @@
     </div>
 
     <div class="hint">
-      Click Yes to accept — No refuses to cooperate 😉
+      Click Yes to accept — No is feeling very athletic 😉
     </div>
   </div>
 
@@ -113,6 +114,16 @@
       const noBtn  = document.getElementById('noBtn');
 
       let floating = false;
+
+      function viewportSize(){
+        const vv = window.visualViewport;
+        return {
+          w: vv ? vv.width  : window.innerWidth,
+          h: vv ? vv.height : window.innerHeight,
+          x: vv ? vv.offsetLeft : 0,
+          y: vv ? vv.offsetTop  : 0
+        };
+      }
 
       function makeFloating(){
         if (floating) return;
@@ -126,30 +137,27 @@
         floating = true;
       }
 
-      function moveAwayFrom(x, y){
-        makeFloating();
-
+      function randomPosition(){
+        const { w, h, x, y } = viewportSize();
         const bw = noBtn.offsetWidth;
         const bh = noBtn.offsetHeight;
         const pad = 12;
 
-        let nx = window.innerWidth  - x;
-        let ny = window.innerHeight - y;
-
-        nx = Math.max(pad, Math.min(nx - bw/2, window.innerWidth  - bw - pad));
-        ny = Math.max(pad, Math.min(ny - bh/2, window.innerHeight - bh - pad));
+        const nx = x + pad + Math.random() * (w - bw - pad * 2);
+        const ny = y + pad + Math.random() * (h - bh - pad * 2);
 
         noBtn.style.left = nx + 'px';
         noBtn.style.top  = ny + 'px';
       }
 
-      function checkProximity(x, y){
+      function checkProximity(px, py){
         const r = noBtn.getBoundingClientRect();
-        const cx = r.left + r.width/2;
-        const cy = r.top  + r.height/2;
+        const cx = r.left + r.width / 2;
+        const cy = r.top  + r.height / 2;
 
-        if (Math.hypot(x - cx, y - cy) < 140){
-          moveAwayFrom(x, y);
+        if (Math.hypot(px - cx, py - cy) < 150){
+          makeFloating();
+          randomPosition();
         }
       }
 
@@ -171,6 +179,10 @@
           checkProximity(e.touches[0].clientX, e.touches[0].clientY);
         }
       }, { passive: true });
+
+      window.visualViewport?.addEventListener('resize', () => {
+        if (floating) randomPosition();
+      });
 
     })();
   </script>
