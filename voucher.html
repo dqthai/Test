@@ -50,8 +50,8 @@
       content: "";
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(255 255 255 / 0.25); /* lighter than before */
-      backdrop-filter: blur(6px); /* subtle blur for readability */
+      background: rgba(255 255 255 / 0.25); /* lighter overlay */
+      backdrop-filter: blur(6px); /* subtle blur */
       z-index: 0;
     }
 
@@ -97,12 +97,14 @@
     .line-item.tickle { 
       animation-delay: 1.5s;
       display: inline-block;
+      opacity: 0; /* start invisible */
     }
 
-    /* Wiggle and pulse for tickle */
-    .wiggle {
+    /* Wiggle + pulse for tickle */
+    .line-item.tickle.wiggle {
       animation: wiggle 0.5s ease-in-out infinite, pulse 2s ease-in-out infinite;
       transform-origin: center;
+      opacity: 1; /* make visible when wiggle starts */
     }
 
     .redeem-note {
@@ -169,7 +171,6 @@
 
     /* Hover effect for line items */
     .line-item:hover { transform: scale(1.05); transition: transform 0.3s ease; }
-
   </style>
 </head>
 
@@ -236,7 +237,7 @@
     }
     setInterval(createHeartPhoto, 3000);
 
-    // Add wiggle to tickle after fade-in completes
+    // Add wiggle + pulse to tickle after fade-in completes
     setTimeout(() => {
       const tickle = document.querySelector('.line-item.tickle');
       tickle.classList.add('wiggle');
